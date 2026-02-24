@@ -29,7 +29,7 @@ if test:
     }
 else:
     connection_params = {
-        'host': os.getenv('MYSQLHOST', 'mysql.railway.internal'),
+        'host': os.getenv('MYSQLHOST', 'mysql-iwlv.railway.internal'),
         'user': os.getenv('MYSQLUSER', 'root'),
         'password': os.getenv('MYSQLPASSWORD', 'VARwxKWNKnOfKfeKGbiFSazJtZSshlqa'),
         'database': os.getenv('MYSQLDATABASE', 'railway'),
