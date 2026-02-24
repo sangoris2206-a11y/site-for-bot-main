@@ -3,15 +3,10 @@ import pymysql
 from flask import Flask, render_template, jsonify, request, send_file
 from datetime import datetime, timedelta
 import json
-from apscheduler.schedulers.background import BackgroundScheduler
 import io
 import csv
 
 app = Flask(__name__)
-
-# Инициализация планировщика
-scheduler = BackgroundScheduler()
-scheduler.start()
 
 test = False
 
@@ -21,7 +16,7 @@ if test:
     connection_params = {
         'host': 'caboose.proxy.rlwy.net',
         'user': 'root',
-        'password': 'DDpsjGWjNaukHWigpSFLsrGGQWcvErmy',
+        'password': 'uVnuTvEPwtdeAWNrJGcTKlKZFhvJSNSY',
         'database': 'railway',
         'port': 48502,
         'charset': 'utf8mb4',
@@ -31,7 +26,7 @@ else:
     connection_params = {
         'host': os.getenv('MYSQLHOST', 'mysql.railway.internal'),
         'user': os.getenv('MYSQLUSER', 'root'),
-        'password': os.getenv('MYSQLPASSWORD', 'DDpsjGWjNaukHWigpSFLsrGGQWcvErmy'),
+        'password': os.getenv('MYSQLPASSWORD', 'uVnuTvEPwtdeAWNrJGcTKlKZFhvJSNSY'),
         'database': os.getenv('MYSQLDATABASE', 'railway'),
         'port': int(os.getenv('MYSQLPORT', 3306)),
         'charset': 'utf8mb4',
@@ -40,77 +35,6 @@ else:
 
 def get_db_connection():
     return pymysql.connect(**connection_params)
-
-def save_user_stats():
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) as total FROM users")
-            total_users = cursor.fetchone()['total']
-            
-            cursor.execute("SELECT COUNT(*) as active FROM users WHERE status = TRUE")
-            active_users = cursor.fetchone()['active']
-            
-            cursor.execute("SELECT id FROM users WHERE status = TRUE")
-            active_user_ids = [row['id'] for row in cursor.fetchall()]
-            
-            if active_user_ids:
-                values = [(user_id, datetime.utcnow()) for user_id in active_user_ids]
-                cursor.executemany(
-                    "INSERT IGNORE INTO unique_users (id, timestamp) VALUES (%s, %s)",
-                    values
-                )
-            
-            cursor.execute("SELECT COUNT(*) as total_rows FROM unique_users")
-            result = cursor.fetchone()
-            total_rows = result['total_rows']
-            
-            utc_now = datetime.utcnow()
-            cursor.execute("""
-                INSERT INTO user_history (timestamp, total_users, active_users, unique_users)
-                VALUES (%s, %s, %s, %s)
-            """, (utc_now, total_users, active_users, total_rows))
-            
-            # Сохраняем лучшие данные за день в late_history (только дата, без времени)
-            today = utc_now.date()
-            cursor.execute("""
-                SELECT MAX(active_users) as max_active 
-                FROM user_history 
-                WHERE DATE(timestamp) = %s
-            """, (today,))
-            max_active = cursor.fetchone()['max_active']
-            
-            if max_active:
-                cursor.execute("""
-                    SELECT total_users, active_users, unique_users
-                    FROM user_history 
-                    WHERE DATE(timestamp) = %s AND active_users = %s
-                    ORDER BY timestamp DESC
-                    LIMIT 1
-                """, (today, max_active))
-                best_record = cursor.fetchone()
-                
-                # Используем только дату (без времени) для timestamp
-                cursor.execute("""
-                    INSERT INTO late_history (timestamp, total_users, active_users, unique_users)
-                    VALUES (%s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE
-                        total_users = VALUES(total_users),
-                        active_users = VALUES(active_users)
-                """, (today, best_record['total_users'], best_record['active_users'],best_record['unique_users']))
-            
-            conn.commit()
-    except Exception as e:
-        print(f"Ошибка при сохранении статистики: {e}")
-    finally:
-        conn.close()
-        
-scheduler.add_job(
-    func=save_user_stats,
-    trigger='interval',
-    minutes=1,
-    id='save_user_stats_job'
-)
 
 def init_db():
     conn = get_db_connection()
@@ -180,38 +104,137 @@ def init_db():
     finally:
         conn.close()
 
-def cleanup_old_data():
-    conn = get_db_connection()
+# Инициализируем БД при запуске
+init_db()
+
+# Импортируем APScheduler внутри функций, чтобы избежать проблем с Gunicorn
+def start_scheduler():
+    from apscheduler.schedulers.background import BackgroundScheduler
+    
+    scheduler = BackgroundScheduler()
+    
+    def save_user_stats():
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) as total FROM users")
+                total_users = cursor.fetchone()['total']
+                
+                cursor.execute("SELECT COUNT(*) as active FROM users WHERE status = TRUE")
+                active_users = cursor.fetchone()['active']
+                
+                cursor.execute("SELECT id FROM users WHERE status = TRUE")
+                active_user_ids = [row['id'] for row in cursor.fetchall()]
+                
+                if active_user_ids:
+                    values = [(user_id, datetime.utcnow()) for user_id in active_user_ids]
+                    cursor.executemany(
+                        "INSERT IGNORE INTO unique_users (id, timestamp) VALUES (%s, %s)",
+                        values
+                    )
+                
+                cursor.execute("SELECT COUNT(*) as total_rows FROM unique_users")
+                result = cursor.fetchone()
+                total_rows = result['total_rows']
+                
+                utc_now = datetime.utcnow()
+                cursor.execute("""
+                    INSERT INTO user_history (timestamp, total_users, active_users, unique_users)
+                    VALUES (%s, %s, %s, %s)
+                """, (utc_now, total_users, active_users, total_rows))
+                
+                # Сохраняем лучшие данные за день в late_history
+                today = utc_now.date()
+                cursor.execute("""
+                    SELECT MAX(active_users) as max_active 
+                    FROM user_history 
+                    WHERE DATE(timestamp) = %s
+                """, (today,))
+                max_active = cursor.fetchone()['max_active']
+                
+                if max_active:
+                    cursor.execute("""
+                        SELECT total_users, active_users, unique_users
+                        FROM user_history 
+                        WHERE DATE(timestamp) = %s AND active_users = %s
+                        ORDER BY timestamp DESC
+                        LIMIT 1
+                    """, (today, max_active))
+                    best_record = cursor.fetchone()
+                    
+                    cursor.execute("""
+                        INSERT INTO late_history (timestamp, total_users, active_users, unique_users)
+                        VALUES (%s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE
+                            total_users = VALUES(total_users),
+                            active_users = VALUES(active_users)
+                    """, (today, best_record['total_users'], best_record['active_users'], best_record['unique_users']))
+                
+                conn.commit()
+        except Exception as e:
+            print(f"Ошибка при сохранении статистики: {e}")
+        finally:
+            conn.close()
+    
+    def cleanup_old_data():
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                # Удаляем старые данные из user_history
+                cursor.execute("""
+                    DELETE FROM user_history 
+                    WHERE timestamp < %s
+                """, (datetime.utcnow() - timedelta(hours=24),))
+                
+                cursor.execute("""
+                    DELETE FROM unique_users 
+                    WHERE timestamp < %s
+                """, (datetime.utcnow() - timedelta(hours=24),))
+                
+                # Удаляем старые данные из late_history
+                cursor.execute("""
+                    DELETE FROM late_history 
+                    WHERE timestamp < %s
+                """, (datetime.utcnow() - timedelta(days=30),))
+                
+                conn.commit()
+        except Exception as e:
+            print(f"Ошибка при очистке старых данных: {e}")
+        finally:
+            conn.close()
+    
+    # Добавляем задачи в планировщик
+    scheduler.add_job(func=save_user_stats, trigger='interval', minutes=1, id='save_user_stats_job')
+    scheduler.add_job(func=cleanup_old_data, trigger='interval', minutes=5, id='cleanup_old_data_job')
+    scheduler.start()
+    print("Планировщик запущен")
+
+# Запускаем планировщик только в основном процессе
+if __name__ != '__main__':
+    # Для Gunicorn - запускаем планировщик при импорте
+    start_scheduler()
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/api/stats')
+def api_stats():
     try:
-        with conn.cursor() as cursor:
-            # Удаляем старые данные из user_history (оставляем только последние 24 часа)
-            cursor.execute("""
-                DELETE FROM user_history 
-                WHERE timestamp < %s
-            """, (datetime.utcnow() - timedelta(hours=24),))
-            
-            cursor.execute("""
-                DELETE FROM unique_users 
-                WHERE timestamp < %s
-            """, (datetime.utcnow() - timedelta(hours=24),))
-            
-            # Удаляем старые данные из late_history (оставляем только последние 30 дней)
-            cursor.execute("""
-                DELETE FROM late_history 
-                WHERE timestamp < %s
-            """, (datetime.utcnow() - timedelta(days=30),))
-            
-            conn.commit()
+        hours = int(request.args.get('hours', 24))
+        # cleanup_old_data() - убрали отсюда, теперь вызывается планировщиком
+        stats = get_user_stats(hours)
+        return jsonify(stats)
     except Exception as e:
-        print(f"Ошибка при очистке старых данных: {e}")
-    finally:
-        conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 def get_user_stats(hours=24):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # Изменено: выбираем подписки только активных пользователей\
             event_counts = {
                 "Алтарь": 0,
                 "Вулкан": 0,
@@ -247,7 +270,6 @@ def get_user_stats(hours=24):
             try:
                 cursor.execute("SELECT mine FROM users WHERE status = TRUE")
                 subscriptions = cursor.fetchall()
-    
                 
                 for user in subscriptions:
                     try:
@@ -259,7 +281,7 @@ def get_user_stats(hours=24):
                         continue
             except:
                 pass
-            # Остальной код остается без изменений
+                
             if hours == 1:
                 time_format = "%H:%M"
                 group_interval = 120
@@ -324,8 +346,6 @@ def get_user_stats(hours=24):
             cursor.execute("SELECT COUNT(*) as active FROM users WHERE status = TRUE")
             active_users = cursor.fetchone()['active']
             
-            
-            
             return {
                 'status': 'success',
                 'data': {
@@ -344,23 +364,6 @@ def get_user_stats(hours=24):
         }
     finally:
         conn.close()
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/api/stats')
-def api_stats():
-    try:
-        hours = int(request.args.get('hours', 24))
-        cleanup_old_data()
-        stats = get_user_stats(hours)
-        return jsonify(stats)
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
 
 @app.route('/api/download_db')
 def download_db():
@@ -477,5 +480,6 @@ def upload_db():
         conn.close()
 
 if __name__ == '__main__':
-    init_db()
+    # Запускаем планировщик только при прямом запуске
+    start_scheduler()
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
