@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аналитика пользователей</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="/static/script.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Аналитика пользователей в реальном времени</h1>
+        <p class="subtitle">Данные обновляются каждую минуту</p>
+
+        <div class="stats-row">
+            <div class="section wide-section">
+                <h2>Процент активности</h2>
+                <div class="stats">
+                    <p>Всего: <span id="total-count" class="highlight">0</span></p>
+                    <p>Активных: <span id="active-count" class="highlight">0</span></p>
+                    <p>Процент: <span id="percentage" class="highlight">0%</span></p>
+                </div>
+            </div>
+            <div class="section wide-section">
+                <h2>Действия бд</h2>
+                <div class="download-db">
+                    <button id="download-db-btn" class="action-btn">Скачать базу данных (SQL)</button>
+                    <div class="upload-container">
+                        <input type="file" id="db-upload" accept=".sql" style="display: none;">
+                        <button id="upload-db-btn" class="action-btn warning">Загрузить базу данных</button>
+                        <p class="warning-text">Внимание: загрузка полностью перезапишет текущую базу данных!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section history-section">
+          <h2>История пользователей</h2>
+          <div class="time-range-selector">
+            <button class="time-range-btn" data-hours="1">1 час</button>
+            <button class="time-range-btn active" data-hours="24">1 день</button>
+            <button class="time-range-btn" data-hours="168">7 дней</button>
+            <button class="time-range-btn" data-hours="720">30 дней</button>
+          </div>
+          <div class="history-chart-container">
+            <canvas id="history-chart"></canvas>
+          </div>
+        </div>
+        <div class="stats-row">
+            <div class="section narrow-section">
+                <h2>ивенты</h2>
+                <div class="chart-container">
+                    <canvas id="event-chart"></canvas>
+                </div>
+            </div>
+            <div class="section narrow-section">
+                <h2>шахты</h2>
+                <div class="chart-container">
+                    <canvas id="mine-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <p>Система мониторинга пользователей © 2025</p>
+            <p id="last-update">Последнее обновление: -</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,238 @@
+:root {
+  /* Цвета */
+  --primary-color: #8a2be2;
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
+  --text-color: #e0e0e0;
+  --border-color: #333;
+  
+  /* Размеры для десктопа */
+  --font-size: 16px;
+  --h1-size: 2.5rem;
+  --h2-size: 2rem;
+  --padding: 20px;
+  --margin: 20px;
+  --gap: 20px;
+  --radius: 8px;
+  --chart-h: 400px;
+  --container-width: 1200px; /* Уменьшил ширину контейнера */
+}
+
+/* Базовые стили */
+body {
+  font-family: Arial, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+  line-height: 1.6;
+  margin: 0;
+  padding: var(--padding);
+  font-size: var(--font-size);
+  min-height: 100vh;
+}
+
+.container {
+  max-width: var(--container-width); /* Используем новую переменную */
+  margin: 0 auto;
+}
+
+/* Заголовки */
+h1 {
+  color: var(--primary-color);
+  font-size: var(--h1-size);
+  text-align: center;
+  margin: 0 0 10px;
+}
+
+h2 {
+  color: var(--primary-color);
+  font-size: var(--h2-size);
+  text-align: center;
+  margin: 0 0 15px;
+}
+
+/* Строка под заголовком */
+.subtitle {
+  text-align: center;
+  display: block;
+  margin: 0 auto 20px;
+  color: var(--text-color);
+}
+
+/* Сетка и секции */
+.stats-row {
+  display: flex;
+  gap: var(--gap);
+  margin-bottom: var(--margin);
+}
+
+.section {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: var(--padding);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  flex: 1;
+}
+
+/* Отступ между секциями */
+.history-section {
+  margin-bottom: 40px; /* Увеличил отступ */
+}
+
+/* Графики */
+.chart-container {
+  width: 100%;
+  height: var(--chart-h);
+  position: relative;
+  margin: var(--margin) auto;
+}
+
+/* Кнопки выбора времени */
+.time-range-selector {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.time-range-btn {
+  background: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid var(--primary-color);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: inherit;
+  transition: all 0.3s;
+}
+
+.time-range-btn:hover {
+  background: rgba(138, 43, 226, 0.2);
+}
+
+.time-range-btn.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.history-chart-container {
+  width: 80%; /* Уменьшаем ширину графика до 80% */
+  margin: 0 auto; /* Центрируем */
+  height: var(--chart-h);
+  position: relative;
+}
+
+/* Адаптация под мобильные */
+@media (max-width: 768px) {
+  :root {
+    --font-size: 14px;
+    --h1-size: 2rem;
+    --h2-size: 1.5rem;
+    --padding: 15px;
+    --margin: 15px;
+    --gap: 15px;
+    --chart-h: 300px;
+    --container-width: 100%; /* На мобильных занимает всю ширину */
+  }
+
+  body {
+    padding: 10px;
+  }
+
+  .stats-row {
+    flex-direction: column;
+  }
+
+  .time-range-selector {
+    gap: 8px;
+  }
+
+  .time-range-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+  
+  .history-section {
+    margin-bottom: 30px; /* Меньший отступ на мобильных */
+  }
+
+  .history-chart-container {
+    width: 100%;
+  }
+}
+
+/* Остальные элементы */
+.highlight {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.stats p {
+  text-align: center;
+  margin: 0;
+  font-size: 1.2em;
+}
+
+.action-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background 0.3s;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.action-btn:hover {
+  background: #7b1fa2;
+}
+
+.upload-container {
+  position: relative;
+  width: 100%;
+}
+
+#db-upload {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.warning {
+  background: #d9534f !important;
+}
+
+.warning:hover {
+  background: #c9302c !important;
+}
+
+.warning-text {
+  color: #d9534f;
+  font-size: 0.9em;
+  text-align: center;
+  margin-top: 10px;
+}
+
+footer {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+#last-update {
+  color: var(--primary-color);
+  font-weight: bold;
+}
