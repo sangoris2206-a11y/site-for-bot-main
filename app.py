@@ -21,7 +21,7 @@ if test:
     connection_params = {
         'host': 'caboose.proxy.rlwy.net',
         'user': 'root',
-        'password': 'uVnuTvEPwtdeAWNrJGcTKlKZFhvJSNSY',
+        'password': 'DDpsjGWjNaukHWigpSFLsrGGQWcvErmy',
         'database': 'railway',
         'port': 48502,
         'charset': 'utf8mb4',
@@ -31,7 +31,7 @@ else:
     connection_params = {
         'host': os.getenv('MYSQLHOST', 'mysql.railway.internal'),
         'user': os.getenv('MYSQLUSER', 'root'),
-        'password': os.getenv('MYSQLPASSWORD', 'uVnuTvEPwtdeAWNrJGcTKlKZFhvJSNSY'),
+        'password': os.getenv('MYSQLPASSWORD', 'DDpsjGWjNaukHWigpSFLsrGGQWcvErmy'),
         'database': os.getenv('MYSQLDATABASE', 'railway'),
         'port': int(os.getenv('MYSQLPORT', 3306)),
         'charset': 'utf8mb4',
