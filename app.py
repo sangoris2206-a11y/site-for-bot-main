@@ -31,7 +31,7 @@ else:
     connection_params = {
         'host': os.getenv('MYSQLHOST', 'mysql.railway.internal'),
         'user': os.getenv('MYSQLUSER', 'root'),
-        'password': os.getenv('MYSQLPASSWORD', 'FSRZQKaHGuyBffTaNYtxqUdMSToVKljm'),
+        'password': os.getenv('MYSQLPASSWORD', 'rVhXVIhTuzeneNgSMAeKJApEaOWzdlTr'),
         'database': os.getenv('MYSQLDATABASE', 'railway'),
         'port': int(os.getenv('MYSQLPORT', 3306)),
         'charset': 'utf8mb4',
